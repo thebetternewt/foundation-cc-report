@@ -2,20 +2,27 @@ require "fileutils"
 require "sqlite3"
 require 'csv'
 
+# --------------------------------------------------
+# Helper Functions
+# --------------------------------------------------
+
 # Return string current date and time.
 def current_datetime
   d = DateTime.now
   d.strftime("%Y-%m-%d_%I_%M_%S")
 end
 
+# Insert gift into array.
 def add_new_gift(gifts_array, new_gift)
   gifts_array << new_gift
 end
 
+# Create placeholders for a given number of SQL fields.
 def fields_for_sql(num_fields)
   '(' + "?,\s" * (num_fields - 1) + '?' + ')'
 end
 
+# Insert gift record into csv file.
 def insert_gift_into_csv(gift, csv)
         csv << [
           gift['settle_date'],
@@ -56,11 +63,13 @@ def insert_gift_into_csv(gift, csv)
         ]
 end
 
-# Create directories for reports
+# --------------------------------------------------
+
+# Create reports directory
 Dir.mkdir('reports') unless File.exists?('reports')
 timestamp = current_datetime
 
-# Create Dtabase
+# Create temporary database
 db = SQLite3::Database.new ":memory:"
 db.results_as_hash = true
 
@@ -225,7 +234,7 @@ imod_records = db.execute imod_query
 
 # Write iModules query results to new file.
 CSV.open('imod_report.csv', 'w') do |csv|
-  # Headers
+  # Insert headers
   csv << [
     'Last Name',
     'First Name',
@@ -245,7 +254,7 @@ CSV.open('imod_report.csv', 'w') do |csv|
     'Tribute Comments'
   ]
 
-  # Data
+  # Insert records
   imod_records.each do |record|
     csv << [ record['last_name'],
              record['first_name'],
@@ -276,8 +285,6 @@ converge_report_overall_totals = CSV.read('converge_report.csv').last
 converge_report = CSV.read('converge_report.csv',
   skip_blanks: true,
   skip_lines: '(Detail report*)|(Created on*)|(Overall Totals*)')
-
-
 
 converge_report.each do |row|
   row.each { |value| value.to_s.lstrip! }
@@ -346,10 +353,10 @@ gifts = db.execute \
     ORDER BY user_id DESC"
 
 # Write final report data to file.
-filename = "#{timestamp}_gift_admin.csv"
+gift_admin_report = "#{timestamp}_gift_admin.csv"
 
-CSV.open("reports/#{filename}", 'w') do |csv|
-  # Headers
+CSV.open("reports/#{gift_admin_report}", 'w') do |csv|
+  # Insert headers
   csv << [ 'Settle Date',
            'Last Name',
            'First Name',
@@ -387,9 +394,9 @@ CSV.open("reports/#{filename}", 'w') do |csv|
            'C_Batch #'
           ]
 
-  # -----------
-  # Insert Data
-  # -----------
+  # --------------------------------------------
+  # Insert data
+  # --------------------------------------------
 
   # Sort gifts by 'settle_date'
   gifts.sort_by! { |gift| gift['settle_date']}
@@ -425,7 +432,6 @@ CSV.open("reports/#{filename}", 'w') do |csv|
 
     # Break apart multiple designations.
     if !gift['gift_amount2'].empty?
-      # new_gift = gift.to_a
       new_gift = (gift.to_a).to_h
       new_gift['designation_amount'] = gift['gift_amount2']
       new_gift['desg_code'] = gift['gift_designation2']
@@ -444,7 +450,7 @@ CSV.open("reports/#{filename}", 'w') do |csv|
   csv << converge_report_overall_totals
 
   puts
-  puts "CSV file '#{filename}' created!"
+  puts "CSV file '#{gift_admin_report}' created!"
 
 end
 
@@ -455,7 +461,6 @@ CSV.open("reports/#{dataserv_report}", 'w') do |csv|
   csv << [
     'Settle Date',
     'Donor ID',
-    # 'test_name', # use for possible blanks?
     'Last Name',
     'First Name',
     'C_Last Name',
@@ -477,15 +482,14 @@ CSV.open("reports/#{dataserv_report}", 'w') do |csv|
     'C_Email'
   ]
 
-  # -----------
-  # Insert Data
-  # -----------
+  # --------------------------------------------
+  # Insert data
+  # --------------------------------------------
 
   gifts.each do |gift|
     csv << [
       gift['settle_date'],
       gift['banner_id'],
-      # gift['123'] || gift['last_name'], # use for possible blanks?
       gift['last_name'],
       gift['first_name'],
       gift['c_last_name'],
@@ -515,5 +519,10 @@ CSV.open("reports/#{dataserv_report}", 'w') do |csv|
 
 end
 
-puts
+# Open gift_admin_report
+if /cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM # Check if Windows OS 
+  system %{cmd /c "start reports\\#{gift_admin_report}"}
+else system %{open "reports/#{gift_admin_report}"} # Assume Mac OS/Linux
+end
 
+puts
