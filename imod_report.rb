@@ -408,7 +408,7 @@ CSV.open("reports/#{gift_admin_report}", 'w') do |csv|
       when 'VISA'
         gift['user_id'] == 'Webpage' ? gift['card_description'] = 'WM' : gift['card_description'] = 'MC'
       when 'AMEX'
-        gift['user_id'] == 'Webpage' ? gift['card_description'] = 'WX' : gift['card_description'] = 'AX'
+        gift['user_id'] == 'Webpage' ? gift['card_description'] = 'WA' : gift['card_description'] = 'AX'
       when 'DISC'
         gift['user_id'] == 'Webpage' ? gift['card_description'] = 'WD' : gift['card_description'] = 'DS'
     end
@@ -419,10 +419,10 @@ CSV.open("reports/#{gift_admin_report}", 'w') do |csv|
         gift['tribute_type'] = 'MEMR'
       when 'In Honor'
         gift['tribute_type'] = 'HONR'
-    end 
-    
+    end
+
     # Anonymous codes = 'ANON'
-    gift['anonymous'] == 'True' ? gift['anonymous'] = 'ANON' : gift['anonymous'] = '' 
+    gift['anonymous'] == 'True' ? gift['anonymous'] = 'ANON' : gift['anonymous'] = ''
 
     # Merge gift/donor info from iModules and Converge.
     gift['banner_id'] = gift['donor_id'] if gift['banner_id'].nil?
@@ -520,7 +520,7 @@ CSV.open("reports/#{dataserv_report}", 'w') do |csv|
 end
 
 # Open gift_admin_report
-if /cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM # Check if Windows OS 
+if /cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM # Check if Windows OS
   system %{cmd /c "start reports\\#{gift_admin_report}"}
 else system %{open "reports/#{gift_admin_report}"} # Assume Mac OS/Linux
 end
