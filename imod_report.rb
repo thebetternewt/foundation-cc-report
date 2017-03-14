@@ -2,6 +2,8 @@ require "fileutils"
 require "sqlite3"
 require 'csv'
 
+converge_report_path, imodules_export_path, imodules_designations_path = ARGV
+
 # --------------------------------------------------
 # Helper Functions
 # --------------------------------------------------
@@ -149,7 +151,7 @@ db.execute <<-SQL
 SQL
 
 # Populate iModules Designations table.
-CSV.foreach('imod_desg.csv', headers: true) do |row|
+CSV.foreach(imodules_designations_path, headers: true) do |row|
   db.execute "INSERT INTO designations (
     gift_id,
     last_name,
@@ -171,7 +173,7 @@ CSV.foreach('imod_desg.csv', headers: true) do |row|
 end
 
 # Populate iModules Export table.
-CSV.foreach('imod_export.csv', headers: true) do |row|
+CSV.foreach(imodules_export_path, headers: true) do |row|
   db.execute "INSERT INTO gift_info VALUES #{fields_for_sql(24)}",
     [ row['Transaction ID'],
       row['Last Name'],
@@ -279,10 +281,10 @@ puts
 puts "CSV file 'imod_report.csv' created!"
 
 # Read in Converge Batch Report overall totals as variable.
-converge_report_overall_totals = CSV.read('converge_report.csv').last
+converge_report_overall_totals = CSV.read(converge_report_path).last
 
 # Read in Converge Batch Report and strip leading whitespace from values.
-converge_report = CSV.read('converge_report.csv',
+converge_report = CSV.read(converge_report_path,
   skip_blanks: true,
   skip_lines: '(Detail report*)|(Created on*)|(Overall Totals*)')
 
@@ -426,12 +428,12 @@ CSV.open("reports/#{gift_admin_report}", 'w') do |csv|
 
     # Merge gift/donor info from iModules and Converge.
     gift['banner_id'] = gift['donor_id'] if gift['banner_id'].nil?
-    gift['designation_amount'] ||= ( gift['gift_amount'].empty? ? gift['total_gift_amount'] : gift['gift_amount'] )
+    gift['designation_amount'] ||= ( gift['gift_amount'].nil? ? gift['total_gift_amount'] : gift['gift_amount'] )
     gift['desg_code'] = gift['gift_designation'] if gift['desg_code'].nil?
     gift['solicitation_code'] = gift['c_solicitation_code'] if gift['solicitation_code'].nil?
 
     # Break apart multiple designations.
-    if !gift['gift_amount2'].empty?
+    if !gift['gift_amount2'].nil?
       new_gift = (gift.to_a).to_h
       new_gift['designation_amount'] = gift['gift_amount2']
       new_gift['desg_code'] = gift['gift_designation2']
